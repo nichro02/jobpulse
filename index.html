@@ -813,10 +813,24 @@ select option { background: #fff; }
     </div>
 
     <hr class="modal-divider">
-    <div class="modal-sub" style="margin-bottom:14px">Resume</div>
+    <div class="modal-footer">
+      <div>
+        <button class="modal-save" onclick="saveSettings()">Save settings</button>
+        <button class="modal-cancel" onclick="closeSettings()" style="margin-left:8px">Cancel</button>
+      </div>
+      <div class="modal-status" id="settingsStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Resume modal -->
+<div class="modal-overlay" id="resumeModal" onclick="closeResumeOnBg(event)">
+  <div class="modal">
+    <div class="modal-title">Resume</div>
+    <div class="modal-sub">Used for AI relevance scoring</div>
 
     <div class="modal-field">
-      <label class="modal-label">Upload resume <span style="font-weight:300;text-transform:none;letter-spacing:0">(PDF or .txt)</span></label>
+      <label class="modal-label">Upload <span style="font-weight:300;text-transform:none;letter-spacing:0">(PDF or .txt)</span></label>
       <div class="resume-drop" id="resumeDrop"
            onclick="document.getElementById('resumeFile').click()"
            ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -824,30 +838,30 @@ select option { background: #fff; }
            ondrop="handleResumeDrop(event)">
         <div class="resume-drop-icon">📄</div>
         <div class="resume-drop-label" id="resumeDropLabel">Click to upload or drag &amp; drop</div>
-        <div class="resume-drop-hint">PDF or plain text. Text is stored locally and only sent to Claude during scoring.</div>
+        <div class="resume-drop-hint">PDF or plain text. Stored locally — only sent to Claude during scoring.</div>
       </div>
       <input type="file" id="resumeFile" accept=".pdf,.txt" style="display:none" onchange="handleResumeFile(event)" />
     </div>
 
-    <div id="resumePreview" class="modal-field">
+    <div class="modal-field">
       <label class="modal-label" style="display:flex;justify-content:space-between">
         <span>Resume text</span>
         <span id="resumeCharCount" style="color:var(--ink-4);font-weight:300;text-transform:none;letter-spacing:0;font-size:0.6rem"></span>
       </label>
-      <textarea class="modal-input" id="resumeText" rows="7"
+      <textarea class="modal-input" id="resumeText" rows="8"
         style="resize:vertical;font-size:0.72rem;line-height:1.55;font-family:var(--mono)"
         placeholder="Paste your resume text here, or upload a file above."
         oninput="updateResumeCharCount()"></textarea>
-      <div class="modal-hint">You can edit this text directly. Saved when you click Save settings.</div>
+      <div class="modal-hint">You can edit this text directly.</div>
     </div>
 
     <hr class="modal-divider">
     <div class="modal-footer">
       <div>
-        <button class="modal-save" onclick="saveSettings()">Save settings</button>
-        <button class="modal-cancel" onclick="closeSettings()" style="margin-left:8px">Cancel</button>
+        <button class="modal-save" onclick="saveResume()">Save resume</button>
+        <button class="modal-cancel" onclick="closeResume()" style="margin-left:8px">Cancel</button>
       </div>
-      <div class="modal-status" id="settingsStatus"></div>
+      <div class="modal-status" id="resumeStatus"></div>
     </div>
   </div>
 </div>
@@ -1045,18 +1059,34 @@ function loadLocalCos()    { try { return JSON.parse(localStorage.getItem(LOCAL_
 function saveLocalCos(arr) { localStorage.setItem(LOCAL_COS_KEY, JSON.stringify(arr)); }
 
 // ── Settings modal ────────────────────────────────────────────────────────────
+// ── Resume modal ─────────────────────────────────────────────────────────────
+function openResume() {
+  const saved = localStorage.getItem(RESUME_KEY) || '';
+  document.getElementById('resumeText').value = saved;
+  updateResumeCharCount();
+  updateResumeDropLabel(!!saved);
+  document.getElementById('resumeStatus').textContent = '';
+  document.getElementById('resumeModal').classList.add('open');
+}
+function closeResume() { document.getElementById('resumeModal').classList.remove('open'); }
+function closeResumeOnBg(e) { if (e.target===document.getElementById('resumeModal')) closeResume(); }
+function saveResume() {
+  const text = document.getElementById('resumeText').value.trim();
+  if (!text) return;
+  saveResumeLS(text);
+  updateResumePulse();
+  const st = document.getElementById('resumeStatus');
+  st.textContent='Saved ✓'; st.className='modal-status ok';
+  setTimeout(closeResume, 700);
+}
+
+// ── Settings modal ────────────────────────────────────────────────────────────
 function openSettings() {
   const s = loadSettings();
   document.getElementById('patInput').value    = s.pat    || '';
   document.getElementById('repoInput').value   = s.repo   || 'nichro02/jobpulse';
   document.getElementById('branchInput').value = s.branch || 'main';
   document.getElementById('settingsStatus').textContent = '';
-  // Populate resume textarea
-  const saved = localStorage.getItem(RESUME_KEY) || '';
-  const ta = document.getElementById('resumeText');
-  ta.value = saved;
-  updateResumeCharCount();
-  updateResumeDropLabel(!!saved);
   document.getElementById('settingsModal').classList.add('open');
 }
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
@@ -1066,14 +1096,10 @@ function saveSettings() {
   const repo   = document.getElementById('repoInput').value.trim();
   const branch = document.getElementById('branchInput').value.trim() || 'main';
   saveSettingsLS({pat,repo,branch});
-  // Save resume text
-  const resumeText = document.getElementById('resumeText').value.trim();
-  if (resumeText) saveResumeLS(resumeText);
   const st = document.getElementById('settingsStatus');
   st.textContent='Saved ✓'; st.className='modal-status ok';
   setTimeout(closeSettings,800);
   updateSyncBadge();
-  updateResumePulse();
 }
 
 function updateResumeCharCount() {
@@ -1270,9 +1296,9 @@ function updateResumePulse() {
   const hasResume = !!localStorage.getItem(RESUME_KEY);
   const label = document.getElementById('pulseLabel');
   if (!hasResume) {
-    label.innerHTML = 'Ready &nbsp;<span style="font-family:var(--mono);font-size:0.6rem;color:var(--amber)" title="No resume uploaded — using default profile">· no resume</span>';
+    label.innerHTML = 'Ready &nbsp;<a onclick="openResume()" style="font-family:var(--mono);font-size:0.6rem;color:var(--amber);cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="Upload your resume to enable AI scoring">No resume</a>';
   } else {
-    label.textContent = 'Ready';
+    label.innerHTML = 'Ready &nbsp;<a onclick="openResume()" style="font-family:var(--mono);font-size:0.6rem;color:var(--ink-4);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Resume ✓</a>';
   }
 }
 
