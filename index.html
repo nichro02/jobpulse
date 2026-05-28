@@ -1450,6 +1450,15 @@ function updateResumePulse() {
   }
 }
 
+function setPulseLabel(status) {
+  // Sets a temporary status while preserving the resume link
+  const hasResume = !!localStorage.getItem(RESUME_KEY);
+  const resumeLink = hasResume
+    ? `&nbsp;<a onclick="openResume()" style="font-family:var(--mono);font-size:0.6rem;color:var(--ink-4);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Resume ✓</a>`
+    : `&nbsp;<a onclick="openResume()" style="font-family:var(--mono);font-size:0.6rem;color:var(--amber);cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="Upload your resume">No resume</a>`;
+  document.getElementById('pulseLabel').innerHTML = status + resumeLink;
+}
+
 async function loadCompanies() {
   let catalog = [];
   try {
@@ -1629,7 +1638,7 @@ async function runScan() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Scanning…';
   document.getElementById('resultTools').style.display='none';
   document.getElementById('progTrack').style.display='block';
-  document.getElementById('pulseLabel').textContent='Scanning';
+  setPulseLabel('Scanning');
 
   const cutoff=new Date(Date.now()-hoursFilter*3600000);
   let raw=[]; let done=0;
@@ -1650,7 +1659,7 @@ async function runScan() {
     document.getElementById('mainHeading').textContent='No results';
     document.getElementById('resultsArea').innerHTML=`<div class="empty"><p>No recent postings matched.<br><em>Try expanding the time window or work type.</em></p></div>`;
     btn.disabled=false; btn.innerHTML='Scan jobs';
-    document.getElementById('pulseLabel').textContent='Done';
+    updateResumePulse();
     return;
   }
 
@@ -1662,7 +1671,7 @@ async function runScan() {
   document.getElementById('searchInput').value='';
   document.getElementById('mainHeading').innerHTML=`${allResults.length} <em>recent openings</em>`;
   setStatus(`${allResults.length} jobs found`);
-  document.getElementById('pulseLabel').textContent='Done';
+  updateResumePulse();
   btn.disabled=false; btn.innerHTML='Scan jobs';
 }
 
@@ -1800,7 +1809,7 @@ async function scoreWithAI(jobs) {
       const data=await resp.json();
       const txt=(data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
       JSON.parse(txt).forEach(s=>{if(batch[s.index])scored.push({...batch[s.index],score:s.score,reason:s.reason});});
-    }catch(e){batch.forEach(j=>scored.push({...j,score:50,reason:'Scoring unavailable'}));}
+    }catch(e){batch.forEach(j=>scored.push({...j,score:50,reason:''}));}
   }
   return scored.sort((a,b)=>b.score-a.score);
 }
