@@ -1044,7 +1044,8 @@ select option { background: #fff; }
         <span id="addSyncBadge" style="font-family:var(--mono);font-size:0.58rem;color:var(--ink-4)"></span>
       </div>
       <div class="add-form">
-        <div class="add-2col">
+        <input class="sb-input" id="addUrl" placeholder="Paste job board URL or enter slug" oninput="parseAddUrl()" />
+        <div class="add-2col" style="margin-top:5px">
           <select id="addAts">
             <option value="ashby">Ashby</option>
             <option value="greenhouse">Greenhouse</option>
@@ -1054,10 +1055,11 @@ select option { background: #fff; }
           </select>
           <input class="sb-input" id="addSlug" placeholder="slug" style="flex:1" />
         </div>
-        <div class="add-2col">
+        <div class="add-2col" style="margin-top:5px">
           <input class="sb-input" id="addName" placeholder="Display name" style="flex:1" />
           <button class="add-btn" id="addCoBtn" onclick="addCo()">Add</button>
         </div>
+        <div id="addConfirm" style="display:none;font-family:var(--mono);font-size:0.65rem;padding:6px 8px;border-radius:4px;margin-top:6px"></div>
       </div>
     </div>
 
@@ -1516,56 +1518,104 @@ function updateRegionNote() {
   document.getElementById('regionNote').textContent = notes[regionFilter];
 }
 
+// ── Add company URL parser ────────────────────────────────────────────────────
+function parseAddUrl() {
+  const raw = document.getElementById('addUrl').value.trim();
+  if (!raw) return;
+
+  // Patterns for each ATS
+  const patterns = [
+    // Ashby: jobs.ashbyhq.com/{slug} or api.ashbyhq.com/posting-api/job-board/{slug}
+    { re: /ashbyhq\.com\/(?:posting-api\/job-board\/)?([^/?#]+)/i, ats: 'ashby' },
+    // Greenhouse: boards.greenhouse.io/{slug} or job-boards.greenhouse.io/{slug}
+    { re: /greenhouse\.io\/([^/?#]+)/i, ats: 'greenhouse' },
+    // Lever: jobs.lever.co/{slug}
+    { re: /lever\.co\/([^/?#]+)/i, ats: 'lever' },
+    // BambooHR: {slug}.bamboohr.com
+    { re: /([^/.]+)\.bamboohr\.com/i, ats: 'bamboohr' },
+    // SmartRecruiters: jobs.smartrecruiters.com/{slug}
+    { re: /smartrecruiters\.com\/([^/?#]+)/i, ats: 'smartrecruiters' },
+  ];
+
+  for (const { re, ats } of patterns) {
+    const m = raw.match(re);
+    if (m) {
+      const slug = m[1].toLowerCase().replace(/\s+/g, '-');
+      document.getElementById('addSlug').value = slug;
+      document.getElementById('addAts').value  = ats;
+      // Auto-populate name from slug if empty
+      const nameEl = document.getElementById('addName');
+      if (!nameEl.value) {
+        nameEl.value = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+      return;
+    }
+  }
+
+  // Not a recognised URL — treat raw input as a slug directly
+  const slug = raw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (slug) document.getElementById('addSlug').value = slug;
+}
+
+function showAddConfirm(msg, isError = false) {
+  const el = document.getElementById('addConfirm');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = isError ? 'rgba(192,57,43,0.08)' : 'var(--green-lt)';
+  el.style.color       = isError ? '#c0392b'               : 'var(--green)';
+  el.style.border      = isError ? '1px solid rgba(192,57,43,0.2)' : '1px solid rgba(26,122,74,0.2)';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
 // ── Add company ───────────────────────────────────────────────────────────────
 async function addCo() {
   const ats  = document.getElementById('addAts').value;
   const slug = document.getElementById('addSlug').value.trim().toLowerCase();
   const name = document.getElementById('addName').value.trim() || slug;
-  if (!slug) return;
-  if (companies.find(c=>c.slug===slug && c.ats===ats)) {
-    document.getElementById('addSlug').value='';
-    document.getElementById('addName').value='';
+  if (!slug) { showAddConfirm('Please enter a slug or paste a URL.', true); return; }
+  if (companies.find(c => c.slug===slug && c.ats===ats)) {
+    showAddConfirm(`${name} is already in the list.`, true);
     return;
   }
 
   const newCo = { name, slug, ats, cats: inferCats({name,slug,ats}) };
   companies.push(newCo);
   selected.add(slug);
-  renderCats();
 
   // 1. Save to localStorage immediately
   const localCos = loadLocalCos();
   localCos.push({ name, slug, ats });
   saveLocalCos(localCos);
 
-  document.getElementById('addSlug').value='';
-  document.getElementById('addName').value='';
+  // Clear all inputs
+  document.getElementById('addUrl').value  = '';
+  document.getElementById('addSlug').value = '';
+  document.getElementById('addName').value = '';
 
-  // 2. Try to write to companies.json via GitHub API
+  // 2. Try GitHub sync
   const {pat} = loadSettings();
-  if (!pat) return; // localStorage only — badge already tells the user
+  if (!pat) {
+    showAddConfirm(`✓ ${name} added (saved locally — add a GitHub token in ⚙ to sync)`);
+    return;
+  }
 
   const btn = document.getElementById('addCoBtn');
   const badge = document.getElementById('addSyncBadge');
-  btn.textContent = '…';
-  btn.disabled = true;
-  badge.textContent = 'Syncing to GitHub…';
-  badge.style.color = 'var(--amber)';
+  btn.textContent = '…'; btn.disabled = true;
+  badge.textContent = 'Syncing…'; badge.style.color = 'var(--amber)';
 
-  // Build the full updated list (base catalog + all local additions)
   const allForCommit = companies.map(({name,slug,ats})=>({name,slug,ats}));
   const result = await commitCompaniesToGitHub(allForCommit);
 
-  btn.textContent = 'Add';
-  btn.disabled = false;
+  btn.textContent = 'Add'; btn.disabled = false;
 
   if (result.ok) {
-    badge.textContent = '✓ saved to GitHub';
-    badge.style.color = 'var(--green)';
-    setTimeout(updateSyncBadge, 3000);
+    showAddConfirm(`✓ ${name} added and saved to GitHub`);
+    badge.textContent = '⬆ syncs to GitHub'; badge.style.color = 'var(--green)';
   } else {
-    badge.textContent = `⚠ local only (${result.reason})`;
-    badge.style.color = 'var(--amber)';
+    showAddConfirm(`✓ ${name} added locally — GitHub sync failed (${result.reason})`);
+    badge.textContent = `⚠ local only`; badge.style.color = 'var(--amber)';
     setTimeout(updateSyncBadge, 5000);
   }
 }
