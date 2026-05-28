@@ -1,0 +1,26 @@
+name: Validate companies.json
+
+on:
+  push:
+    paths:
+      - 'public/companies.json'
+  pull_request:
+    paths:
+      - 'public/companies.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate companies.json schema
+        run: node scripts/validate-companies.js
+
+      - name: Probe a sample of slugs
+        run: node scripts/validate-companies.js --probe

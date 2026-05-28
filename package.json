@@ -1,0 +1,13 @@
+{
+  "name": "jobpulse",
+  "version": "1.0.0",
+  "description": "JobPulse — real-time multi-ATS job tracker with AI relevance scoring",
+  "type": "module",
+  "scripts": {
+    "fetch-companies": "node scripts/fetch-companies.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

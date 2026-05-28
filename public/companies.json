@@ -1,0 +1,33 @@
+{
+  "generated": "2026-05-18T00:00:00.000Z",
+  "note": "Base catalog. Companies added via the JobPulse UI are committed here automatically via the GitHub API.",
+  "companies": [
+    { "name": "HubSpot",          "slug": "hubspot",       "ats": "greenhouse" },
+    { "name": "Gong",             "slug": "gong",          "ats": "greenhouse" },
+    { "name": "Outreach",         "slug": "outreach",      "ats": "greenhouse" },
+    { "name": "Salesloft",        "slug": "salesloft",     "ats": "greenhouse" },
+    { "name": "Clari",            "slug": "clari",         "ats": "greenhouse" },
+    { "name": "Gainsight",        "slug": "gainsight",     "ats": "greenhouse" },
+    { "name": "Pendo",            "slug": "pendo",         "ats": "greenhouse" },
+    { "name": "Zendesk",          "slug": "zendesk",       "ats": "greenhouse" },
+    { "name": "Intercom",         "slug": "intercom",      "ats": "greenhouse" },
+    { "name": "Figma",            "slug": "figma",         "ats": "greenhouse" },
+    { "name": "Airtable",         "slug": "airtable",      "ats": "greenhouse" },
+    { "name": "Stripe",           "slug": "stripe",        "ats": "greenhouse" },
+    { "name": "Fivetran",         "slug": "fivetran",      "ats": "greenhouse" },
+    { "name": "Zapier",           "slug": "zapier",        "ats": "greenhouse" },
+    { "name": "Ibotta",           "slug": "ibotta",        "ats": "greenhouse" },
+    { "name": "Ping Identity",    "slug": "ping-identity", "ats": "greenhouse" },
+    { "name": "Notion",           "slug": "notion",        "ats": "ashby"      },
+    { "name": "Retool",           "slug": "retool",        "ats": "ashby"      },
+    { "name": "Rippling",         "slug": "rippling",      "ats": "ashby"      },
+    { "name": "Ramp",             "slug": "ramp",          "ats": "ashby"      },
+    { "name": "Lattice",          "slug": "lattice",       "ats": "ashby"      },
+    { "name": "Deel",             "slug": "deel",          "ats": "ashby"      },
+    { "name": "Mixpanel",         "slug": "mixpanel",      "ats": "ashby"      },
+    { "name": "ZenBusiness",      "slug": "zenbusiness",   "ats": "ashby"      },
+    { "name": "Amplitude",        "slug": "amplitude",     "ats": "lever"      },
+    { "name": "Apollo.io",        "slug": "apollo",        "ats": "lever"      },
+    { "name": "Palantir",         "slug": "palantir",      "ats": "lever"      }
+  ]
+}

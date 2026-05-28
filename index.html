@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobPulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:       #111010;
+  --ink-2:     #3a3836;
+  --ink-3:     #8a8480;
+  --ink-4:     #c4bfba;
+  --paper:     #faf8f5;
+  --paper-2:   #f2ede7;
+  --paper-3:   #e8e0d6;
+  --amber:     #c8621a;
+  --amber-lt:  #fdf0e6;
+  --amber-mid: #f4d4b4;
+  --green:     #1a7a4a;
+  --green-lt:  #e8f5ee;
+  --serif:     'Instrument Serif', Georgia, serif;
+  --sans:      'DM Sans', sans-serif;
+  --mono:      'DM Mono', monospace;
+  --rule:      1px solid var(--paper-3);
+  --rule-ink:  1px solid var(--ink);
+}
+
+html { font-size: 15px; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Masthead ─────────────────────────────────────── */
+.masthead {
+  border-bottom: var(--rule-ink);
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 64px;
+}
+
+.masthead-left {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.site-name {
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1;
+  text-align: center;
+}
+
+.masthead-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+  animation: throb 2.2s ease-in-out infinite;
+}
+
+@keyframes throb {
+  0%,100% { opacity:1; } 50% { opacity:0.3; }
+}
+
+/* ── Layout ───────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 268px 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+.sidebar {
+  border-right: var(--rule);
+  padding: 28px 24px;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.main {
+  padding: 36px 48px;
+  min-width: 0;
+}
+
+/* ── Sidebar ──────────────────────────────────────── */
+.sb-section { margin-bottom: 24px; }
+
+.sb-label {
+  font-family: var(--mono);
+  font-size: 0.59rem;
+  color: var(--ink-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 9px;
+  padding-bottom: 6px;
+  border-bottom: var(--rule);
+}
+
+/* Time pills */
+.time-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.time-pill {
+  padding: 4px 10px;
+  border: 1px solid var(--paper-3);
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.time-pill:hover { border-color: var(--ink-4); color: var(--ink-2); }
+.time-pill.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+/* Checkboxes */
+.check-group { display: flex; flex-direction: column; gap: 3px; }
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.check-row:hover { background: var(--paper-2); }
+
+.check-row.on {
+  background: var(--amber-lt);
+  border-color: var(--amber-mid);
+  color: var(--amber);
+}
+
+.check-box {
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--ink-4);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.55rem;
+  transition: all 0.1s;
+}
+
+.check-row.on .check-box {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #fff;
+}
+
+/* Region select */
+.region-select {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.14s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a8480' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.region-select:focus { border-color: var(--ink-3); }
+
+.region-note {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink-4);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+/* Inputs */
+.sb-input {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.14s;
+}
+
+.sb-input:focus { border-color: var(--ink-3); }
+
+/* Add form */
+.ats-pip {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.add-form { display: flex; flex-direction: column; gap: 5px; }
+
+.add-2col { display: flex; gap: 5px; }
+
+.add-2col select {
+  flex: 0 0 118px;
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 7px 8px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.add-btn {
+  background: var(--paper-2);
+  border: 1px solid var(--paper-3);
+  color: var(--ink-2);
+  padding: 7px 11px;
+  border-radius: 4px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+
+.add-btn:hover { border-color: var(--ink-3); color: var(--ink); }
+
+/* Scan button */
+.scan-btn {
+  width: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 11px 16px;
+  border-radius: 5px;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+}
+
+.scan-btn:hover:not(:disabled) { background: #2a2828; }
+.scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Main ─────────────────────────────────────────── */
+.main-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: var(--rule-ink);
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.main-heading {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.main-heading em { font-style: italic; color: var(--ink-3); }
+
+.result-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 6px 11px;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink);
+  outline: none;
+  width: 185px;
+  transition: border-color 0.14s;
+}
+
+.search-input:focus { border-color: var(--ink-3); }
+.search-input::placeholder { color: var(--ink-4); }
+
+.sort-sel {
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 6px 9px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--ink-2);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Status strip */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  background: var(--paper-2);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  margin-bottom: 24px;
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--ink-3);
+  min-height: 40px;
+}
+
+.prog-track {
+  flex: 1;
+  height: 2px;
+  background: var(--paper-3);
+  border-radius: 2px;
+  overflow: hidden;
+  display: none;
+}
+
+.prog-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+  transition: width 0.22s ease;
+  width: 0%;
+}
+
+/* ── Results table ────────────────────────────────── */
+.r-table { width: 100%; border-collapse: collapse; }
+
+.r-table thead th {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 400;
+  text-align: left;
+  padding: 0 14px 10px 0;
+  border-bottom: var(--rule-ink);
+  white-space: nowrap;
+}
+
+.r-table thead th:last-child { text-align: right; padding-right: 0; }
+
+.r-row {
+  border-bottom: 1px solid var(--paper-2);
+  transition: background 0.1s;
+  animation: rowIn 0.22s ease both;
+}
+
+@keyframes rowIn {
+  from { opacity:0; transform:translateX(-3px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+
+.r-row:hover { background: var(--paper-2); }
+
+.r-row td { padding: 13px 14px 13px 0; vertical-align: top; }
+.r-row td:last-child { text-align: right; padding-right: 0; }
+
+/* Score cell */
+.score-cell { width: 72px; }
+
+.score-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-n {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.score-n.hi  { color: var(--green); }
+.score-n.mid { color: var(--amber); }
+.score-n.lo  { color: var(--ink-4); }
+
+.score-bar {
+  width: 32px;
+  height: 3px;
+  background: var(--paper-3);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.score-bar-fill { height: 100%; border-radius: 2px; background: var(--ink-4); }
+.score-bar-fill.hi  { background: var(--green); }
+.score-bar-fill.mid { background: var(--amber); }
+
+/* Title cell */
+.title-cell { min-width: 0; }
+
+.job-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+
+.job-reason {
+  font-size: 0.76rem;
+  color: var(--ink-3);
+  font-weight: 300;
+  line-height: 1.5;
+  max-width: 460px;
+}
+
+/* Meta cell */
+.meta-cell { width: 170px; padding-right: 18px !important; }
+
+.meta-stack { display: flex; flex-direction: column; gap: 4px; }
+
+.meta-co {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.meta-line {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.w-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.w-remote { background: var(--green-lt); color: var(--green); }
+.w-hybrid { background: var(--amber-lt); color: var(--amber); }
+.w-onsite { background: var(--paper-2); color: var(--ink-3); }
+
+.ats-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Time cell */
+.time-cell { width: 80px; white-space: nowrap; }
+
+.time-val {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--ink-3);
+}
+
+.time-val.fresh { color: var(--green); font-weight: 500; }
+
+/* Apply cell */
+.apply-cell { width: 68px; }
+
+.apply-link {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  color: var(--amber);
+  text-decoration: none;
+  border: 1px solid var(--amber-mid);
+  padding: 4px 9px;
+  border-radius: 3px;
+  transition: all 0.12s;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.apply-link:hover { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+/* Empty state */
+.empty {
+  padding: 64px 0;
+  text-align: center;
+}
+
+.empty p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink-3);
+  line-height: 1.75;
+}
+
+/* Spinner */
+.spinner {
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--paper-3);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--paper-3); border-radius: 2px; }
+
+select option { background: #fff; }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: none; border-bottom: var(--rule); }
+  .masthead { padding: 0 20px; grid-template-columns: 1fr auto; }
+  .masthead-left { display: none; }
+  .main { padding: 24px 20px; }
+  .meta-cell, .time-cell { display: none; }
+}
+
+/* ── Settings modal ────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(17,16,16,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 10px;
+  width: 480px; max-width: 95vw;
+  padding: 28px 32px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+  transform: translateY(8px);
+  transition: transform 0.18s;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.modal-sub {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.modal-field { margin-bottom: 16px; }
+
+.modal-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--paper-3);
+  border-radius: 4px;
+  padding: 8px 11px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.14s;
+}
+
+.modal-input:focus { border-color: var(--ink-3); }
+
+.modal-hint {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink-4);
+  margin-top: 5px;
+  line-height: 1.55;
+}
+
+.modal-hint a { color: var(--amber); text-decoration: none; }
+.modal-hint a:hover { text-decoration: underline; }
+
+.modal-divider {
+  border: none; border-top: var(--rule);
+  margin: 20px 0;
+}
+
+.modal-footer {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+
+.modal-save {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 9px 22px;
+  border-radius: 5px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s;
+}
+
+.modal-save:hover { background: var(--ink-2); }
+
+.modal-cancel {
+  background: none;
+  border: 1px solid var(--paper-3);
+  color: var(--ink-3);
+  padding: 9px 16px;
+  border-radius: 5px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.modal-cancel:hover { border-color: var(--ink-4); color: var(--ink-2); }
+
+.modal-status {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-3);
+}
+
+.modal-status.ok  { color: var(--green); }
+.modal-status.err { color: #c0392b; }
+
+/* gear btn */
+.gear-btn {
+  background: none;
+  border: 1px solid var(--paper-3);
+  color: var(--ink-3);
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.12s;
+  margin-left: 10px;
+}
+
+.gear-btn:hover { border-color: var(--ink-4); color: var(--ink-2); }
+
+/* local-badge on add form */
+.local-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  background: var(--amber-lt);
+  color: var(--amber);
+  border: 1px solid var(--amber-mid);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+</style>
+</head>
+<body>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettingsOnBg(event)">
+  <div class="modal">
+    <div class="modal-title">Settings</div>
+    <div class="modal-sub">GitHub integration</div>
+
+    <div class="modal-field">
+      <label class="modal-label">GitHub Personal Access Token</label>
+      <input class="modal-input" type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+      <div class="modal-hint">
+        Required to save new companies back to <code>public/companies.json</code> in your repo.<br>
+        Generate one at <a href="https://github.com/settings/tokens/new?scopes=repo&description=JobPulse" target="_blank">github.com/settings/tokens</a> with <strong>repo</strong> scope.
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Repository (owner/repo)</label>
+      <input class="modal-input" type="text" id="repoInput" placeholder="nichro02/jobpulse" value="nichro02/jobpulse" />
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Branch</label>
+      <input class="modal-input" type="text" id="branchInput" placeholder="main" value="main" />
+    </div>
+
+    <hr class="modal-divider">
+    <div class="modal-footer">
+      <div>
+        <button class="modal-save" onclick="saveSettings()">Save settings</button>
+        <button class="modal-cancel" onclick="closeSettings()" style="margin-left:8px">Cancel</button>
+      </div>
+      <div class="modal-status" id="settingsStatus"></div>
+    </div>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="masthead-left" id="dateLabel"></div>
+  <div class="site-name">JobPulse</div>
+  <div class="masthead-right" style="display:flex;align-items:center;gap:8px">
+    <div class="status-pill">
+      <div class="pulse" id="pulseDot"></div>
+      <span id="pulseLabel">Ready</span>
+    </div>
+    <button class="gear-btn" onclick="openSettings()" title="Settings">⚙</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-label">Posted within</div>
+      <div class="time-row">
+        <div class="time-pill on" onclick="setHours(1,this)">1h</div>
+        <div class="time-pill"    onclick="setHours(6,this)">6h</div>
+        <div class="time-pill"    onclick="setHours(24,this)">24h</div>
+        <div class="time-pill"    onclick="setHours(72,this)">3d</div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Work type</div>
+      <div class="check-group">
+        <div class="check-row on" data-t="remote" onclick="toggleType('remote',this)">
+          <span class="check-box">✓</span><span>Remote</span>
+        </div>
+        <div class="check-row on" data-t="hybrid" onclick="toggleType('hybrid',this)">
+          <span class="check-box">✓</span><span>Hybrid</span>
+        </div>
+        <div class="check-row" data-t="onsite" onclick="toggleType('onsite',this)">
+          <span class="check-box"></span><span>On-site</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Job board / ATS</div>
+      <div class="check-group" id="atsList">
+        <div class="check-row on" data-ats="ashby" onclick="toggleAts('ashby',this)">
+          <span class="check-box">✓</span>
+          <span class="ats-pip" style="background:#4a7eff"></span>
+          <span>Ashby</span>
+        </div>
+        <div class="check-row on" data-ats="greenhouse" onclick="toggleAts('greenhouse',this)">
+          <span class="check-box">✓</span>
+          <span class="ats-pip" style="background:#27ae60"></span>
+          <span>Greenhouse</span>
+        </div>
+        <div class="check-row on" data-ats="lever" onclick="toggleAts('lever',this)">
+          <span class="check-box">✓</span>
+          <span class="ats-pip" style="background:#e67e22"></span>
+          <span>Lever</span>
+        </div>
+        <div class="check-row on" data-ats="bamboohr" onclick="toggleAts('bamboohr',this)">
+          <span class="check-box">✓</span>
+          <span class="ats-pip" style="background:#2ecc71"></span>
+          <span>BambooHR</span>
+        </div>
+        <div class="check-row on" data-ats="smartrecruiters" onclick="toggleAts('smartrecruiters',this)">
+          <span class="check-box">✓</span>
+          <span class="ats-pip" style="background:#9b59b6"></span>
+          <span>SmartRecruiters</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Location</div>
+      <input class="sb-input" id="locInput" value="Denver, CO" />
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Region</div>
+      <select class="region-select" id="regionSelect" onchange="updateRegionNote()">
+        <option value="na_remote">North America + Remote</option>
+        <option value="na_only">North America only</option>
+        <option value="us_only">United States only</option>
+        <option value="all">All regions</option>
+      </select>
+      <div class="region-note" id="regionNote">Excludes EMEA &amp; APAC postings</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Company groups</span>
+        <span style="display:flex;gap:8px">
+          <span onclick="selectAllCats()" style="cursor:pointer;color:var(--amber);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em">All</span>
+          <span style="color:var(--ink-4);font-family:var(--mono);font-size:0.6rem">/</span>
+          <span onclick="selectNoneCats()" style="cursor:pointer;color:var(--ink-3);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em">None</span>
+        </span>
+      </div>
+      <div class="check-group" id="catList"></div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Job title keywords</div>
+      <input class="sb-input" id="keywordInput" placeholder="e.g. product manager, platform" />
+      <div class="region-note" id="keywordNote">Leave blank to match all titles. Separate multiple terms with commas.</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Add company</span>
+        <span id="addSyncBadge" style="font-family:var(--mono);font-size:0.58rem;color:var(--ink-4)"></span>
+      </div>
+      <div class="add-form">
+        <div class="add-2col">
+          <select id="addAts">
+            <option value="ashby">Ashby</option>
+            <option value="greenhouse">Greenhouse</option>
+            <option value="lever">Lever</option>
+            <option value="bamboohr">BambooHR</option>
+            <option value="smartrecruiters">SmartRecruiters</option>
+          </select>
+          <input class="sb-input" id="addSlug" placeholder="slug" style="flex:1" />
+        </div>
+        <div class="add-2col">
+          <input class="sb-input" id="addName" placeholder="Display name" style="flex:1" />
+          <button class="add-btn" id="addCoBtn" onclick="addCo()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="scan-btn" id="scanBtn" onclick="runScan()">Scan jobs</button>
+
+  </aside>
+
+  <main class="main">
+
+    <div class="main-top">
+      <div class="main-heading" id="mainHeading">Waiting to scan</div>
+      <div class="result-tools" id="resultTools" style="display:none">
+        <input class="search-input" id="searchInput" placeholder="Filter by company or title…" oninput="filterResults()" />
+        <select class="sort-sel" onchange="sortResults(this.value)">
+          <option value="relevance">Relevance</option>
+          <option value="newest">Newest first</option>
+          <option value="company">Company A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status-strip">
+      <span id="statusMsg">Select company groups and hit <strong>Scan jobs</strong> to begin.</span>
+      <div class="prog-track" id="progTrack">
+        <div class="prog-fill" id="progFill"></div>
+      </div>
+    </div>
+
+    <div id="resultsArea">
+      <div class="empty">
+        <p>Your next role is out there.<br>Configure your filters and scan.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Resume ────────────────────────────────────────────────────────────────────
+const RESUME = `Platform Product Manager, 10+ years B2B SaaS. Skills: Salesforce CRM, GTM Infrastructure, Workflow Automation, Integration Strategy, Buy-vs-Build, Roadmapping, Agile, cross-functional alignment. Tools: Salesforce, Jira, Confluence, Figma, Snowflake, Tableau, Marketo, Zendesk. Experience: ZenBusiness (PM Business Systems), Lumary (Product Owner), Salesforce (Senior BA/PM, Sales Ops), Cisco/OpenDNS (Sales Ops). Target: Platform PM or Senior PM in B2B SaaS, GTM, CRM, RevOps.`;
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const ATS_COLOR = { ashby:'#4a7eff', greenhouse:'#27ae60', lever:'#e67e22', bamboohr:'#2ecc71', smartrecruiters:'#9b59b6' };
+const ATS_LABEL = { ashby:'Ashby', greenhouse:'Greenhouse', lever:'Lever', bamboohr:'BambooHR', smartrecruiters:'SmartRec' };
+const SETTINGS_KEY   = 'jobpulse_settings';
+const LOCAL_COS_KEY  = 'jobpulse_local_companies';
+const COMPANIES_PATH = 'public/companies.json';
+
+// ── Settings helpers ──────────────────────────────────────────────────────────
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
+}
+function saveSettingsLS(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+function loadLocalCos()    { try { return JSON.parse(localStorage.getItem(LOCAL_COS_KEY)) || []; } catch { return []; } }
+function saveLocalCos(arr) { localStorage.setItem(LOCAL_COS_KEY, JSON.stringify(arr)); }
+
+// ── Settings modal ────────────────────────────────────────────────────────────
+function openSettings() {
+  const s = loadSettings();
+  document.getElementById('patInput').value    = s.pat    || '';
+  document.getElementById('repoInput').value   = s.repo   || 'nichro02/jobpulse';
+  document.getElementById('branchInput').value = s.branch || 'main';
+  document.getElementById('settingsStatus').textContent = '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function closeSettingsOnBg(e) { if (e.target===document.getElementById('settingsModal')) closeSettings(); }
+function saveSettings() {
+  const pat    = document.getElementById('patInput').value.trim();
+  const repo   = document.getElementById('repoInput').value.trim();
+  const branch = document.getElementById('branchInput').value.trim() || 'main';
+  saveSettingsLS({pat,repo,branch});
+  const st = document.getElementById('settingsStatus');
+  st.textContent='Saved ✓'; st.className='modal-status ok';
+  setTimeout(closeSettings,800);
+  updateSyncBadge();
+}
+function updateSyncBadge() {
+  const {pat}=loadSettings();
+  const b=document.getElementById('addSyncBadge'); if(!b)return;
+  if(pat){ b.textContent='⬆ syncs to GitHub'; b.style.color='var(--green)'; }
+  else   { b.textContent='local only · ⚙ add token to sync'; b.style.color='var(--ink-4)'; }
+}
+
+// ── GitHub API write-back ─────────────────────────────────────────────────────
+async function commitCompaniesToGitHub(updatedList) {
+  const {pat,repo,branch} = loadSettings();
+  if (!pat || !repo) return {ok:false, reason:'no_token'};
+
+  const headers = {
+    'Authorization': `Bearer ${pat}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+
+  const apiBase = `https://api.github.com/repos/${repo}`;
+
+  // 1. Get current file SHA (required to update)
+  let sha;
+  try {
+    const r = await fetch(`${apiBase}/contents/${COMPANIES_PATH}?ref=${branch}`, {headers});
+    if (r.ok) { const d=await r.json(); sha=d.sha; }
+    else if (r.status!==404) return {ok:false, reason:`fetch_sha_${r.status}`};
+  } catch(e) { return {ok:false, reason:`network_${e.message}`}; }
+
+  // 2. Build new file content
+  const content = {
+    generated: new Date().toISOString(),
+    note: 'Base catalog. Companies added via the JobPulse UI are committed here automatically via the GitHub API.',
+    companies: updatedList.map(({name,slug,ats})=>({name,slug,ats}))
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)+'\n')));
+
+  // 3. Commit
+  const body = {
+    message: `chore: add company via JobPulse UI [skip ci]`,
+    content: encoded,
+    branch,
+    ...(sha ? {sha} : {}),
+  };
+
+  try {
+    const r = await fetch(`${apiBase}/contents/${COMPANIES_PATH}`, {
+      method:'PUT', headers, body: JSON.stringify(body)
+    });
+    if (r.ok) return {ok:true};
+    const err = await r.json().catch(()=>({}));
+    return {ok:false, reason: err.message || `http_${r.status}`};
+  } catch(e) { return {ok:false, reason:`commit_${e.message}`}; }
+}
+
+// ── Company catalog — loaded dynamically ──────────────────────────────────────
+const CATS = [
+  {id:'gtm',    label:'GTM & RevOps'},
+  {id:'saas',   label:'B2B SaaS / Platform'},
+  {id:'remote', label:'Remote-friendly'},
+  {id:'denver', label:'Denver / CO'},
+];
+
+// Minimal fallback if fetch fails
+const FALLBACK_CATALOG = [
+  {slug:'hubspot',   name:'HubSpot',    ats:'greenhouse', cats:['gtm']},
+  {slug:'gong',      name:'Gong',       ats:'greenhouse', cats:['gtm']},
+  {slug:'notion',    name:'Notion',     ats:'ashby',      cats:['saas','remote']},
+  {slug:'rippling',  name:'Rippling',   ats:'ashby',      cats:['saas']},
+  {slug:'amplitude', name:'Amplitude',  ats:'lever',      cats:['saas']},
+];
+
+// Assign category tags based on ATS/name heuristics for companies loaded from JSON
+function inferCats(co) {
+  const n = (co.name||'').toLowerCase();
+  const cats = [];
+  if (/hub|gong|outreach|salesloft|clari|gainsight|pendo|apollo|drift|demandbase|zoominfo|highspot|seismic|zendesk|intercom/.test(n)) cats.push('gtm');
+  if (/notion|airtable|retool|figma|rippling|stripe|fivetran|zapier|amplitude|mixpanel|lattice|deel|ramp/.test(n)) cats.push('saas');
+  if (/remote|gitlab|zapier|automattic|doist|buffer|deel|mercury|apollo/.test(n)) cats.push('remote');
+  if (/zenbusiness|ibotta|palantir|ping/.test(n)) cats.push('denver');
+  if (!cats.length) cats.push('saas'); // default bucket
+  return cats;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let companies   = [];
+let selected    = new Set();
+let hoursFilter = 1;
+let typeFilters = new Set(['remote','hybrid']);
+let atsFilters  = new Set(['ashby','greenhouse','lever','bamboohr','smartrecruiters']);
+let regionFilter = 'na_remote';
+let allResults  = [];
+let displayed   = [];
+
+// ── EMEA/APAC signal words ────────────────────────────────────────────────────
+const EMEA_SIGNALS=['london','united kingdom','uk ','england','scotland','ireland','dublin','amsterdam','netherlands','berlin','germany','munich','frankfurt','paris','france','madrid','spain','barcelona','milan','italy','stockholm','sweden','oslo','norway','copenhagen','denmark','helsinki','finland','zurich','switzerland','geneva','brussels','belgium','vienna','austria','warsaw','poland','lisbon','portugal','tel aviv','israel','dubai','uae','riyadh','saudi','emea','europe','european'];
+const APAC_SIGNALS=['singapore','sydney','melbourne','australia','auckland','new zealand','tokyo','japan','seoul','south korea','beijing','shanghai','china','hong kong','taipei','taiwan','mumbai','bangalore','india','delhi','jakarta','indonesia','manila','philippines','kuala lumpur','malaysia','bangkok','thailand','apac','asia'];
+const NA_SIGNALS=['united states','usa','u.s.','new york','san francisco','los angeles','chicago','austin','boston','seattle','denver','atlanta','miami','dallas','houston','phoenix','portland','minneapolis','washington dc','remote','canada','toronto','vancouver','montreal','north america','anywhere'];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('dateLabel').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  updateSyncBadge();
+  await loadCompanies();
+  renderCats();
+  renderCatCompanyCounts();
+}
+
+async function loadCompanies() {
+  let catalog = [];
+  try {
+    // Try to load from public/companies.json (relative URL works for both local file and GitHub Pages)
+    const r = await fetch('public/companies.json');
+    if (r.ok) {
+      const d = await r.json();
+      catalog = (d.companies || []).map(c => ({
+        ...c,
+        cats: inferCats(c)
+      }));
+    }
+  } catch(e) { /* fall through */ }
+
+  if (!catalog.length) catalog = FALLBACK_CATALOG;
+
+  // Merge in locally-added companies (from localStorage)
+  const localCos = loadLocalCos();
+  for (const lc of localCos) {
+    if (!catalog.find(c => c.slug===lc.slug && c.ats===lc.ats)) {
+      catalog.push({ ...lc, cats: inferCats(lc) });
+    }
+  }
+
+  companies = catalog;
+  selected  = new Set(companies.map(c => c.slug));
+}
+
+// ── Category rendering ────────────────────────────────────────────────────────
+function renderCats() {
+  document.getElementById('catList').innerHTML = CATS.map(cat => {
+    const cos   = companies.filter(c => c.cats.includes(cat.id));
+    const allOn = cos.length>0 && cos.every(c=>selected.has(c.slug));
+    return `<div class="check-row ${allOn?'on':''}" onclick="toggleCat('${cat.id}')">
+      <span class="check-box">${allOn?'✓':''}</span>
+      <span style="flex:1">${cat.label}</span>
+      <span style="font-family:var(--mono);font-size:0.6rem;color:${allOn?'var(--amber)':'var(--ink-4)'}">${cos.length}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCatCompanyCounts() {
+  // Update count badges without full re-render
+  renderCats();
+}
+
+function toggleCat(id) {
+  const cos   = companies.filter(c=>c.cats.includes(id));
+  const allOn = cos.every(c=>selected.has(c.slug));
+  cos.forEach(c => allOn ? selected.delete(c.slug) : selected.add(c.slug));
+  renderCats();
+}
+
+function selectAllCats() { companies.forEach(c=>selected.add(c.slug)); renderCats(); }
+function selectNoneCats() { selected.clear(); renderCats(); }
+
+function setHours(h,btn) {
+  hoursFilter=h;
+  document.querySelectorAll('.time-pill').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function toggleType(type,btn) {
+  if(typeFilters.has(type)){
+    if(typeFilters.size===1)return;
+    typeFilters.delete(type); btn.classList.remove('on'); btn.querySelector('.check-box').textContent='';
+  }else{
+    typeFilters.add(type); btn.classList.add('on'); btn.querySelector('.check-box').textContent='✓';
+  }
+}
+
+function toggleAts(ats,btn) {
+  if(atsFilters.has(ats)){
+    if(atsFilters.size===1)return;
+    atsFilters.delete(ats); btn.classList.remove('on'); btn.querySelector('.check-box').textContent='';
+  }else{
+    atsFilters.add(ats); btn.classList.add('on'); btn.querySelector('.check-box').textContent='✓';
+  }
+}
+
+function updateRegionNote() {
+  regionFilter = document.getElementById('regionSelect').value;
+  const notes = {
+    na_remote:'Excludes EMEA & APAC postings',
+    na_only:  'North America only',
+    us_only:  'United States postings only',
+    all:      'No region filtering'
+  };
+  document.getElementById('regionNote').textContent = notes[regionFilter];
+}
+
+// ── Add company ───────────────────────────────────────────────────────────────
+async function addCo() {
+  const ats  = document.getElementById('addAts').value;
+  const slug = document.getElementById('addSlug').value.trim().toLowerCase();
+  const name = document.getElementById('addName').value.trim() || slug;
+  if (!slug) return;
+  if (companies.find(c=>c.slug===slug && c.ats===ats)) {
+    document.getElementById('addSlug').value='';
+    document.getElementById('addName').value='';
+    return;
+  }
+
+  const newCo = { name, slug, ats, cats: inferCats({name,slug,ats}) };
+  companies.push(newCo);
+  selected.add(slug);
+  renderCats();
+
+  // 1. Save to localStorage immediately
+  const localCos = loadLocalCos();
+  localCos.push({ name, slug, ats });
+  saveLocalCos(localCos);
+
+  document.getElementById('addSlug').value='';
+  document.getElementById('addName').value='';
+
+  // 2. Try to write to companies.json via GitHub API
+  const {pat} = loadSettings();
+  if (!pat) return; // localStorage only — badge already tells the user
+
+  const btn = document.getElementById('addCoBtn');
+  const badge = document.getElementById('addSyncBadge');
+  btn.textContent = '…';
+  btn.disabled = true;
+  badge.textContent = 'Syncing to GitHub…';
+  badge.style.color = 'var(--amber)';
+
+  // Build the full updated list (base catalog + all local additions)
+  const allForCommit = companies.map(({name,slug,ats})=>({name,slug,ats}));
+  const result = await commitCompaniesToGitHub(allForCommit);
+
+  btn.textContent = 'Add';
+  btn.disabled = false;
+
+  if (result.ok) {
+    badge.textContent = '✓ saved to GitHub';
+    badge.style.color = 'var(--green)';
+    setTimeout(updateSyncBadge, 3000);
+  } else {
+    badge.textContent = `⚠ local only (${result.reason})`;
+    badge.style.color = 'var(--amber)';
+    setTimeout(updateSyncBadge, 5000);
+  }
+}
+
+// ── Scan ──────────────────────────────────────────────────────────────────────
+async function runScan() {
+  const toScan = companies.filter(c=>selected.has(c.slug) && atsFilters.has(c.ats));
+  if (!toScan.length) { setStatus('Select at least one company.'); return; }
+
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Scanning…';
+  document.getElementById('resultTools').style.display='none';
+  document.getElementById('progTrack').style.display='block';
+  document.getElementById('pulseLabel').textContent='Scanning';
+
+  const cutoff=new Date(Date.now()-hoursFilter*3600000);
+  let raw=[]; let done=0;
+
+  for(const co of toScan){
+    try{ raw.push(...await fetchJobs(co,cutoff)); }catch(e){}
+    done++;
+    document.getElementById('progFill').style.width=(done/toScan.length*100)+'%';
+    setStatus(`Scanned ${done} of ${toScan.length} — ${raw.length} jobs found`);
+  }
+
+  document.getElementById('progTrack').style.display='none';
+
+  raw = raw.filter(j=>passKeyword(j));
+
+  if(!raw.length){
+    setStatus(`No jobs found in the last ${hoursFilter}h. Try expanding filters.`);
+    document.getElementById('mainHeading').textContent='No results';
+    document.getElementById('resultsArea').innerHTML=`<div class="empty"><p>No recent postings matched.<br><em>Try expanding the time window or work type.</em></p></div>`;
+    btn.disabled=false; btn.innerHTML='Scan jobs';
+    document.getElementById('pulseLabel').textContent='Done';
+    return;
+  }
+
+  setStatus(`Scoring ${raw.length} jobs with AI…`);
+  allResults=await scoreWithAI(raw);
+  displayed=[...allResults];
+  renderTable(displayed);
+  document.getElementById('resultTools').style.display='flex';
+  document.getElementById('searchInput').value='';
+  document.getElementById('mainHeading').innerHTML=`${allResults.length} <em>recent openings</em>`;
+  setStatus(`${allResults.length} jobs ranked by match to your profile`);
+  document.getElementById('pulseLabel').textContent='Done';
+  btn.disabled=false; btn.innerHTML='Scan jobs';
+}
+
+function setStatus(msg) { document.getElementById('statusMsg').innerHTML=msg; }
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function passWork(j) {
+  if(typeFilters.has('remote')&&j.isRemote)return true;
+  if(typeFilters.has('hybrid')&&j.isHybrid)return true;
+  if(typeFilters.has('onsite')&&!j.isRemote&&!j.isHybrid)return true;
+  return false;
+}
+
+function passRegion(j) {
+  if(regionFilter==='all')return true;
+  const loc=(j.location||'').toLowerCase();
+  if(!loc||loc==='remote'||loc==='anywhere'||loc==='worldwide')return regionFilter!=='us_only';
+  if(EMEA_SIGNALS.some(s=>loc.includes(s)))return false;
+  if(APAC_SIGNALS.some(s=>loc.includes(s)))return false;
+  if(regionFilter==='us_only')return NA_SIGNALS.some(s=>loc.includes(s));
+  return true;
+}
+
+function passKeyword(j) {
+  const raw=document.getElementById('keywordInput').value.trim();
+  if(!raw)return true;
+  const terms=raw.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const title=(j.title||'').toLowerCase();
+  return terms.some(t=>title.includes(t));
+}
+
+// ── ATS fetchers ──────────────────────────────────────────────────────────────
+async function fetchJobs(co,cutoff) {
+  switch(co.ats){
+    case 'ashby':           return fetchAshby(co,cutoff);
+    case 'greenhouse':      return fetchGreenhouse(co,cutoff);
+    case 'lever':           return fetchLever(co,cutoff);
+    case 'bamboohr':        return fetchBambooHR(co,cutoff);
+    case 'smartrecruiters': return fetchSmartRecruiters(co,cutoff);
+    default: return [];
+  }
+}
+
+const norm=(co,j)=>({...j,company:co.name,companySlug:co.slug,ats:co.ats});
+
+async function fetchAshby(co,cutoff){
+  const r=await fetch(`https://api.ashbyhq.com/posting-api/job-board/${co.slug}`);
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d.jobs||[]).filter(j=>!j.publishedAt||new Date(j.publishedAt)>=cutoff).map(j=>{
+    const loc=(j.location||'').toLowerCase(),wp=(j.workplaceType||'').toLowerCase();
+    return norm(co,{id:j.id,title:j.title,location:j.location||'',
+      url:j.jobUrl||`https://jobs.ashbyhq.com/${co.slug}/${j.id}`,
+      publishedAt:j.publishedAt,department:j.department||'',
+      description:(j.descriptionPlain||'').slice(0,500),
+      isRemote:j.isRemote||wp==='remote'||loc.includes('remote'),
+      isHybrid:wp==='hybrid'||loc.includes('hybrid')});
+  }).filter(j=>passWork(j)&&passRegion(j));
+}
+
+async function fetchGreenhouse(co,cutoff){
+  const r=await fetch(`https://boards-api.greenhouse.io/v1/boards/${co.slug}/jobs?content=true`);
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d.jobs||[]).filter(j=>!j.updated_at||new Date(j.updated_at)>=cutoff).map(j=>{
+    const loc=(j.location?.name||'').toLowerCase();
+    return norm(co,{id:j.id,title:j.title,location:j.location?.name||'',
+      url:j.absolute_url||'',publishedAt:j.updated_at,
+      department:j.departments?.[0]?.name||'',
+      description:stripHtml(j.content||'').slice(0,500),
+      isRemote:loc.includes('remote'),isHybrid:loc.includes('hybrid')});
+  }).filter(j=>passWork(j)&&passRegion(j));
+}
+
+async function fetchLever(co,cutoff){
+  const r=await fetch(`https://api.lever.co/v0/postings/${co.slug}?mode=json`);
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d||[]).filter(j=>!j.createdAt||new Date(j.createdAt)>=cutoff).map(j=>{
+    const loc=(j.categories?.location||'').toLowerCase();
+    return norm(co,{id:j.id,title:j.text,location:j.categories?.location||'',
+      url:j.hostedUrl||'',
+      publishedAt:j.createdAt?new Date(j.createdAt).toISOString():null,
+      department:j.categories?.department||'',
+      description:(j.descriptionPlain||stripHtml(j.description||'')).slice(0,500),
+      isRemote:loc.includes('remote'),isHybrid:loc.includes('hybrid')});
+  }).filter(j=>passWork(j)&&passRegion(j));
+}
+
+async function fetchBambooHR(co,cutoff){
+  const r=await fetch(`https://${co.slug}.bamboohr.com/jobs/embed2.php?version=1.0.0`);
+  if(!r.ok)return[];
+  const txt=await r.text();
+  const m=txt.match(/\{[\s\S]*\}/); if(!m)return[];
+  const d=JSON.parse(m[0]);
+  return((d.result||d.jobs||[])).map(j=>{
+    const loc=(j.location?.city||'').toString().toLowerCase();
+    return norm(co,{id:j.id||j.jobId,title:j.jobOpeningName||j.title||j.name||'',
+      location:j.location?.city||'',
+      url:`https://${co.slug}.bamboohr.com/jobs/view.php?id=${j.id||j.jobId}`,
+      publishedAt:null,department:j.departmentLabel||j.department||'',
+      description:(j.description||'').slice(0,500),
+      isRemote:loc.includes('remote'),isHybrid:loc.includes('hybrid')});
+  }).filter(j=>passWork(j)&&passRegion(j));
+}
+
+async function fetchSmartRecruiters(co,cutoff){
+  const r=await fetch(`https://api.smartrecruiters.com/v1/companies/${co.slug}/postings`);
+  if(!r.ok)return[];
+  const d=await r.json();
+  return(d.content||[]).filter(j=>!j.releasedDate||new Date(j.releasedDate)>=cutoff).map(j=>{
+    const loc=(j.location?.city||'').toLowerCase();
+    return norm(co,{id:j.id,title:j.name,
+      location:[j.location?.city,j.location?.region].filter(Boolean).join(', '),
+      url:j.ref||'',publishedAt:j.releasedDate,department:j.department?.label||'',
+      description:(j.jobAd?.sections?.jobDescription?.text||'').slice(0,500),
+      isRemote:loc.includes('remote')||j.location?.remote===true,
+      isHybrid:loc.includes('hybrid')});
+  }).filter(j=>passWork(j)&&passRegion(j));
+}
+
+function stripHtml(h){return h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+
+// ── AI scoring ────────────────────────────────────────────────────────────────
+async function scoreWithAI(jobs) {
+  const BATCH=20; let scored=[];
+  for(let i=0;i<jobs.length;i+=BATCH){
+    const batch=jobs.slice(i,i+BATCH);
+    const list=batch.map((j,idx)=>`[${idx}] ${j.company} — ${j.title}\nDept:${j.department} Loc:${j.location}\n${j.description.slice(0,240)}`).join('\n\n');
+    const prompt=`Score jobs for this candidate. Return ONLY a JSON array, no markdown.\n\nCANDIDATE: ${RESUME}\n\nJOBS:\n${list}\n\nReturn:[{"index":0,"score":85,"reason":"One sentence why"},...]  90-100:Platform/CRM/GTM PM. 70-89:B2B SaaS PM. 50-69:Adjacent. <50:Weak.`;
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+      const data=await resp.json();
+      const txt=(data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+      JSON.parse(txt).forEach(s=>{if(batch[s.index])scored.push({...batch[s.index],score:s.score,reason:s.reason});});
+    }catch(e){batch.forEach(j=>scored.push({...j,score:50,reason:'Scoring unavailable'}));}
+  }
+  return scored.sort((a,b)=>b.score-a.score);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderTable(jobs) {
+  const area=document.getElementById('resultsArea');
+  if(!jobs.length){area.innerHTML=`<div class="empty"><p><em>No jobs match this filter.</em></p></div>`;return;}
+  const rows=jobs.map((j,i)=>{
+    const tier=j.score>=80?'hi':j.score>=60?'mid':'lo';
+    const wCls=j.isRemote?'remote':j.isHybrid?'hybrid':'onsite';
+    const wLbl=j.isRemote?'Remote':j.isHybrid?'Hybrid':'On-site';
+    const fresh=j.publishedAt&&(Date.now()-new Date(j.publishedAt))<3600000;
+    return`<tr class="r-row" style="animation-delay:${Math.min(i*.022,.5)}s">
+      <td class="score-cell">
+        <div class="score-wrap">
+          <span class="score-n ${tier}">${j.score}</span>
+          <div class="score-bar"><div class="score-bar-fill ${tier}" style="width:${j.score}%"></div></div>
+        </div>
+      </td>
+      <td class="title-cell">
+        <div class="job-title">${j.title}</div>
+        <div class="job-reason">${j.reason}</div>
+      </td>
+      <td class="meta-cell">
+        <div class="meta-stack">
+          <div class="meta-co">${j.company}</div>
+          <div class="meta-line"><span class="w-badge w-${wCls}">${wLbl}</span></div>
+          ${j.location?`<div class="meta-line">${j.location}</div>`:''}
+          ${j.department?`<div class="meta-line">${j.department}</div>`:''}
+          <div class="meta-line"><span class="ats-label">${ATS_LABEL[j.ats]||j.ats}</span></div>
+        </div>
+      </td>
+      <td class="time-cell"><span class="time-val ${fresh?'fresh':''}">${fmtTime(j.publishedAt)}</span></td>
+      <td class="apply-cell"><a class="apply-link" href="${j.url}" target="_blank" rel="noopener">Apply →</a></td>
+    </tr>`;
+  }).join('');
+  area.innerHTML=`<table class="r-table">
+    <thead><tr><th>Score</th><th>Role</th><th>Company</th><th>Posted</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function filterResults() {
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  displayed=q?allResults.filter(j=>j.company.toLowerCase().includes(q)||j.title.toLowerCase().includes(q)):[...allResults];
+  document.getElementById('mainHeading').innerHTML=`${displayed.length} <em>results</em>`;
+  renderTable(displayed);
+}
+
+function sortResults(by) {
+  if(by==='relevance')displayed.sort((a,b)=>b.score-a.score);
+  else if(by==='newest')displayed.sort((a,b)=>new Date(b.publishedAt||0)-new Date(a.publishedAt||0));
+  else if(by==='company')displayed.sort((a,b)=>a.company.localeCompare(b.company));
+  renderTable(displayed);
+}
+
+function fmtTime(iso) {
+  if(!iso)return'—';
+  const d=Date.now()-new Date(iso);
+  const m=Math.floor(d/60000);
+  if(m<60)return m+'m ago';
+  const h=Math.floor(m/60);
+  if(h<24)return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+
+init();
+</script>
+</body>
+</html>
