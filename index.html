@@ -722,6 +722,39 @@ select option { background: #fff; }
 .modal-status.ok  { color: var(--green); }
 .modal-status.err { color: #c0392b; }
 
+/* resume drop zone */
+.resume-drop {
+  border: 1.5px dashed var(--paper-3);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--paper);
+}
+
+.resume-drop:hover, .resume-drop.drag-over {
+  border-color: var(--amber);
+  background: var(--amber-lt);
+}
+
+.resume-drop-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+.resume-drop-label {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.resume-drop-hint {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink-4);
+  line-height: 1.5;
+}
+
 /* gear btn */
 .gear-btn {
   background: none;
@@ -777,6 +810,35 @@ select option { background: #fff; }
     <div class="modal-field">
       <label class="modal-label">Branch</label>
       <input class="modal-input" type="text" id="branchInput" placeholder="main" value="main" />
+    </div>
+
+    <hr class="modal-divider">
+    <div class="modal-sub" style="margin-bottom:14px">Resume</div>
+
+    <div class="modal-field">
+      <label class="modal-label">Upload resume <span style="font-weight:300;text-transform:none;letter-spacing:0">(PDF or .txt)</span></label>
+      <div class="resume-drop" id="resumeDrop"
+           onclick="document.getElementById('resumeFile').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleResumeDrop(event)">
+        <div class="resume-drop-icon">📄</div>
+        <div class="resume-drop-label" id="resumeDropLabel">Click to upload or drag &amp; drop</div>
+        <div class="resume-drop-hint">PDF or plain text. Text is stored locally and only sent to Claude during scoring.</div>
+      </div>
+      <input type="file" id="resumeFile" accept=".pdf,.txt" style="display:none" onchange="handleResumeFile(event)" />
+    </div>
+
+    <div id="resumePreview" class="modal-field">
+      <label class="modal-label" style="display:flex;justify-content:space-between">
+        <span>Resume text</span>
+        <span id="resumeCharCount" style="color:var(--ink-4);font-weight:300;text-transform:none;letter-spacing:0;font-size:0.6rem"></span>
+      </label>
+      <textarea class="modal-input" id="resumeText" rows="7"
+        style="resize:vertical;font-size:0.72rem;line-height:1.55;font-family:var(--mono)"
+        placeholder="Paste your resume text here, or upload a file above."
+        oninput="updateResumeCharCount()"></textarea>
+      <div class="modal-hint">You can edit this text directly. Saved when you click Save settings.</div>
     </div>
 
     <hr class="modal-divider">
@@ -955,14 +1017,24 @@ select option { background: #fff; }
 
 <script>
 // ── Resume ────────────────────────────────────────────────────────────────────
-const RESUME = `Platform Product Manager, 10+ years B2B SaaS. Skills: Salesforce CRM, GTM Infrastructure, Workflow Automation, Integration Strategy, Buy-vs-Build, Roadmapping, Agile, cross-functional alignment. Tools: Salesforce, Jira, Confluence, Figma, Snowflake, Tableau, Marketo, Zendesk. Experience: ZenBusiness (PM Business Systems), Lumary (Product Owner), Salesforce (Senior BA/PM, Sales Ops), Cisco/OpenDNS (Sales Ops). Target: Platform PM or Senior PM in B2B SaaS, GTM, CRM, RevOps.`;
+// Fallback resume used if none uploaded yet
+const RESUME_FALLBACK = `Platform Product Manager, 10+ years B2B SaaS. Skills: Salesforce CRM, GTM Infrastructure, Workflow Automation, Integration Strategy, Buy-vs-Build, Roadmapping, Agile, cross-functional alignment. Tools: Salesforce, Jira, Confluence, Figma, Snowflake, Tableau, Marketo, Zendesk. Experience: ZenBusiness (PM Business Systems), Lumary (Product Owner), Salesforce (Senior BA/PM, Sales Ops), Cisco/OpenDNS (Sales Ops). Target: Platform PM or Senior PM in B2B SaaS, GTM, CRM, RevOps.`;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ATS_COLOR = { ashby:'#4a7eff', greenhouse:'#27ae60', lever:'#e67e22', bamboohr:'#2ecc71', smartrecruiters:'#9b59b6' };
 const ATS_LABEL = { ashby:'Ashby', greenhouse:'Greenhouse', lever:'Lever', bamboohr:'BambooHR', smartrecruiters:'SmartRec' };
 const SETTINGS_KEY   = 'jobpulse_settings';
 const LOCAL_COS_KEY  = 'jobpulse_local_companies';
+const RESUME_KEY     = 'jobpulse_resume';
 const COMPANIES_PATH = 'public/companies.json';
+
+// ── Resume helpers ────────────────────────────────────────────────────────────
+function loadResume() {
+  return localStorage.getItem(RESUME_KEY) || RESUME_FALLBACK;
+}
+function saveResumeLS(text) {
+  localStorage.setItem(RESUME_KEY, text.trim());
+}
 
 // ── Settings helpers ──────────────────────────────────────────────────────────
 function loadSettings() {
@@ -979,6 +1051,12 @@ function openSettings() {
   document.getElementById('repoInput').value   = s.repo   || 'nichro02/jobpulse';
   document.getElementById('branchInput').value = s.branch || 'main';
   document.getElementById('settingsStatus').textContent = '';
+  // Populate resume textarea
+  const saved = localStorage.getItem(RESUME_KEY) || '';
+  const ta = document.getElementById('resumeText');
+  ta.value = saved;
+  updateResumeCharCount();
+  updateResumeDropLabel(!!saved);
   document.getElementById('settingsModal').classList.add('open');
 }
 function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
@@ -988,10 +1066,95 @@ function saveSettings() {
   const repo   = document.getElementById('repoInput').value.trim();
   const branch = document.getElementById('branchInput').value.trim() || 'main';
   saveSettingsLS({pat,repo,branch});
+  // Save resume text
+  const resumeText = document.getElementById('resumeText').value.trim();
+  if (resumeText) saveResumeLS(resumeText);
   const st = document.getElementById('settingsStatus');
   st.textContent='Saved ✓'; st.className='modal-status ok';
   setTimeout(closeSettings,800);
   updateSyncBadge();
+  updateResumePulse();
+}
+
+function updateResumeCharCount() {
+  const ta  = document.getElementById('resumeText');
+  const el  = document.getElementById('resumeCharCount');
+  const len = ta.value.trim().length;
+  el.textContent = len > 0 ? `${len.toLocaleString()} chars` : '';
+}
+
+function updateResumeDropLabel(hasResume) {
+  const el = document.getElementById('resumeDropLabel');
+  el.textContent = hasResume ? '✓ Resume loaded — click to replace' : 'Click to upload or drag & drop';
+  el.style.color = hasResume ? 'var(--green)' : '';
+}
+
+function handleResumeDrop(event) {
+  event.preventDefault();
+  document.getElementById('resumeDrop').classList.remove('drag-over');
+  const file = event.dataTransfer?.files?.[0];
+  if (file) processResumeFile(file);
+}
+
+function handleResumeFile(event) {
+  const file = event.target.files?.[0];
+  if (file) processResumeFile(file);
+}
+
+function processResumeFile(file) {
+  const st = document.getElementById('settingsStatus');
+  st.textContent = 'Reading file…';
+  st.className = 'modal-status';
+
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    // PDF: read as text via FileReader (extracts raw text stream — good enough for most PDFs)
+    const reader = new FileReader();
+    reader.onload = e => {
+      // Extract readable strings from PDF binary
+      const raw = e.target.result;
+      const text = extractTextFromPDF(raw);
+      if (text.trim().length > 50) {
+        setResumeText(text, file.name, st);
+      } else {
+        // Fallback: ask user to paste text
+        st.textContent = 'PDF text extraction limited — please paste your resume text below.';
+        st.className = 'modal-status';
+        document.getElementById('resumeText').focus();
+      }
+    };
+    reader.readAsBinaryString(file);
+  } else {
+    // Plain text
+    const reader = new FileReader();
+    reader.onload = e => setResumeText(e.target.result, file.name, st);
+    reader.readAsText(file);
+  }
+}
+
+function extractTextFromPDF(binary) {
+  // Extract human-readable strings from PDF binary stream
+  // Pulls text between BT/ET markers and parenthesized strings
+  const chunks = [];
+  // Match parenthesized strings (PDF text objects)
+  const re = /\(([^)\\]{2,})\)/g;
+  let m;
+  while ((m = re.exec(binary)) !== null) {
+    const s = m[1].replace(/\\n/g,' ').replace(/\\r/g,' ').trim();
+    if (s.length > 1 && /[a-zA-Z]/.test(s)) chunks.push(s);
+  }
+  return chunks.join(' ').replace(/\s+/g,' ').trim();
+}
+
+function setResumeText(text, filename, statusEl) {
+  const clean = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
+  document.getElementById('resumeText').value = clean;
+  updateResumeCharCount();
+  updateResumeDropLabel(true);
+  if (statusEl) {
+    statusEl.textContent = `✓ ${filename} loaded`;
+    statusEl.className = 'modal-status ok';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  }
 }
 function updateSyncBadge() {
   const {pat}=loadSettings();
@@ -1097,9 +1260,20 @@ async function init() {
   document.getElementById('dateLabel').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   updateSyncBadge();
+  updateResumePulse();
   await loadCompanies();
   renderCats();
   renderCatCompanyCounts();
+}
+
+function updateResumePulse() {
+  const hasResume = !!localStorage.getItem(RESUME_KEY);
+  const label = document.getElementById('pulseLabel');
+  if (!hasResume) {
+    label.innerHTML = 'Ready &nbsp;<span style="font-family:var(--mono);font-size:0.6rem;color:var(--amber)" title="No resume uploaded — using default profile">· no resume</span>';
+  } else {
+    label.textContent = 'Ready';
+  }
 }
 
 async function loadCompanies() {
@@ -1416,10 +1590,11 @@ function stripHtml(h){return h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(
 // ── AI scoring ────────────────────────────────────────────────────────────────
 async function scoreWithAI(jobs) {
   const BATCH=20; let scored=[];
+  const resume = loadResume();
   for(let i=0;i<jobs.length;i+=BATCH){
     const batch=jobs.slice(i,i+BATCH);
     const list=batch.map((j,idx)=>`[${idx}] ${j.company} — ${j.title}\nDept:${j.department} Loc:${j.location}\n${j.description.slice(0,240)}`).join('\n\n');
-    const prompt=`Score jobs for this candidate. Return ONLY a JSON array, no markdown.\n\nCANDIDATE: ${RESUME}\n\nJOBS:\n${list}\n\nReturn:[{"index":0,"score":85,"reason":"One sentence why"},...]  90-100:Platform/CRM/GTM PM. 70-89:B2B SaaS PM. 50-69:Adjacent. <50:Weak.`;
+    const prompt=`Score jobs for this candidate. Return ONLY a JSON array, no markdown.\n\nCANDIDATE RESUME:\n${resume}\n\nJOBS:\n${list}\n\nReturn:[{"index":0,"score":85,"reason":"One sentence why"},...]  90-100:Excellent match. 70-89:Good match. 50-69:Adjacent. <50:Weak.`;
     try{
       const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
