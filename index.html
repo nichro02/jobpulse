@@ -1638,7 +1638,6 @@ async function runScan() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Scanning…';
   document.getElementById('resultTools').style.display='none';
   document.getElementById('progTrack').style.display='block';
-  document.getElementById('statusStrip').style.display='flex';
   setPulseLabel('Scanning');
 
   const cutoff=new Date(Date.now()-hoursFilter*3600000);
@@ -1657,7 +1656,6 @@ async function runScan() {
 
   if(!raw.length){
     setStatus(`No jobs found in the last ${hoursFilter}h. Try expanding filters.`);
-    document.getElementById('statusStrip').style.display = 'none';
     document.getElementById('mainHeading').textContent='No results';
     document.getElementById('resultsArea').innerHTML=`<div class="empty"><p>No recent postings matched.<br><em>Try expanding the time window or work type.</em></p></div>`;
     btn.disabled=false; btn.innerHTML='Scan jobs';
@@ -1673,7 +1671,6 @@ async function runScan() {
   document.getElementById('searchInput').value='';
   document.getElementById('mainHeading').innerHTML=`${allResults.length} <em>recent openings</em>`;
   setStatus(`${allResults.length} jobs found`);
-  document.getElementById('statusStrip').style.display = 'none';
   updateResumePulse();
   btn.disabled=false; btn.innerHTML='Scan jobs';
 }
