@@ -755,6 +755,73 @@ select option { background: #fff; }
   line-height: 1.5;
 }
 
+/* star button on result rows */
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: transform 0.15s;
+  color: var(--ink-4);
+  display: inline-flex;
+  align-items: center;
+}
+
+.star-btn:hover { transform: scale(1.2); color: var(--amber); }
+.star-btn.starred { color: var(--amber); }
+
+/* watchlist badge on result row */
+.watchlist-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--amber);
+  background: var(--amber-lt);
+  border: 1px solid var(--amber-mid);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: middle;
+  letter-spacing: 0.04em;
+}
+
+/* watchlist items in sidebar */
+.wl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  gap: 6px;
+}
+
+.wl-item:hover { background: var(--paper-2); }
+
+.wl-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-remove {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink-4);
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+
+.wl-remove:hover { color: var(--red, #c0392b); }
+
 /* gear btn */
 .gear-btn {
   background: none;
@@ -956,14 +1023,13 @@ select option { background: #fff; }
 
     <div class="sb-section">
       <div class="sb-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Company groups</span>
-        <span style="display:flex;gap:8px">
-          <span onclick="selectAllCats()" style="cursor:pointer;color:var(--amber);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em">All</span>
-          <span style="color:var(--ink-4);font-family:var(--mono);font-size:0.6rem">/</span>
-          <span onclick="selectNoneCats()" style="cursor:pointer;color:var(--ink-3);font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em">None</span>
-        </span>
+        <span>Watchlist</span>
+        <span id="watchlistCount" style="font-family:var(--mono);font-size:0.6rem;color:var(--ink-4)"></span>
       </div>
-      <div class="check-group" id="catList"></div>
+      <div id="watchlistEmpty" style="font-family:var(--mono);font-size:0.68rem;color:var(--ink-4);padding:6px 0;line-height:1.6">
+        No companies yet.<br>Star a result to add it here.
+      </div>
+      <div class="co-scroll" id="watchlistList" style="max-height:180px"></div>
     </div>
 
     <div class="sb-section">
@@ -1040,7 +1106,16 @@ const ATS_LABEL = { ashby:'Ashby', greenhouse:'Greenhouse', lever:'Lever', bambo
 const SETTINGS_KEY   = 'jobpulse_settings';
 const LOCAL_COS_KEY  = 'jobpulse_local_companies';
 const RESUME_KEY     = 'jobpulse_resume';
+const WATCHLIST_KEY  = 'jobpulse_watchlist';
 const COMPANIES_PATH = 'public/companies.json';
+
+// ── Watchlist helpers ─────────────────────────────────────────────────────────
+function loadWatchlistLS() {
+  try { return new Set(JSON.parse(localStorage.getItem(WATCHLIST_KEY)) || []); } catch { return new Set(); }
+}
+function saveWatchlistLS(set) {
+  localStorage.setItem(WATCHLIST_KEY, JSON.stringify([...set]));
+}
 
 // ── Resume helpers ────────────────────────────────────────────────────────────
 function loadResume() {
@@ -1238,13 +1313,6 @@ async function commitCompaniesToGitHub(updatedList) {
 }
 
 // ── Company catalog — loaded dynamically ──────────────────────────────────────
-const CATS = [
-  {id:'gtm',    label:'GTM & RevOps'},
-  {id:'saas',   label:'B2B SaaS / Platform'},
-  {id:'remote', label:'Remote-friendly'},
-  {id:'denver', label:'Denver / CO'},
-];
-
 // Minimal fallback if fetch fails
 const FALLBACK_CATALOG = [
   {slug:'hubspot',   name:'HubSpot',    ats:'greenhouse', cats:['gtm']},
@@ -1269,6 +1337,7 @@ function inferCats(co) {
 // ── State ─────────────────────────────────────────────────────────────────────
 let companies   = [];
 let selected    = new Set();
+let watchlist   = new Set(); // slugs of watched companies
 let hoursFilter = 1;
 let typeFilters = new Set(['remote','hybrid']);
 let atsFilters  = new Set(['ashby','greenhouse','lever','bamboohr','smartrecruiters']);
@@ -1287,9 +1356,86 @@ async function init() {
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   updateSyncBadge();
   updateResumePulse();
+  watchlist = loadWatchlistLS();
   await loadCompanies();
-  renderCats();
-  renderCatCompanyCounts();
+  renderWatchlist();
+}
+
+// ── Watchlist ─────────────────────────────────────────────────────────────────
+async function toggleWatchlist(slug, name, btn) {
+  if (watchlist.has(slug)) {
+    watchlist.delete(slug);
+    btn.textContent = '☆';
+    btn.classList.remove('starred');
+    btn.title = 'Add to watchlist';
+  } else {
+    watchlist.add(slug);
+    btn.textContent = '★';
+    btn.classList.add('starred');
+    btn.title = 'Remove from watchlist';
+    // Add to watchlist badge on title cell
+    const row = btn.closest('tr');
+    if (row) {
+      const titleEl = row.querySelector('.job-title');
+      if (titleEl && !titleEl.querySelector('.watchlist-badge')) {
+        titleEl.insertAdjacentHTML('beforeend', '<span class="watchlist-badge">★ watching</span>');
+      }
+    }
+  }
+  saveWatchlistLS(watchlist);
+  renderWatchlist();
+
+  // Sync watchlist flag to companies.json via GitHub API
+  const {pat} = loadSettings();
+  if (!pat) return;
+  const allForCommit = companies.map(c => ({
+    name: c.name, slug: c.slug, ats: c.ats,
+    ...(watchlist.has(c.slug) ? {watchlist: true} : {})
+  }));
+  await commitCompaniesToGitHub(allForCommit); // fire and forget
+}
+
+function renderWatchlist() {
+  const list    = document.getElementById('watchlistList');
+  const empty   = document.getElementById('watchlistEmpty');
+  const counter = document.getElementById('watchlistCount');
+
+  if (!watchlist.size) {
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    counter.textContent = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  counter.textContent = `${watchlist.size} ${watchlist.size === 1 ? 'company' : 'companies'}`;
+
+  // Build display list — match slug to company name if available
+  list.innerHTML = [...watchlist].map(slug => {
+    const co = companies.find(c => c.slug === slug);
+    const name = co ? co.name : slug;
+    return `<div class="wl-item">
+      <span style="color:var(--amber);font-size:0.75rem">★</span>
+      <span class="wl-item-name">${name}</span>
+      <span class="wl-remove" onclick="removeFromWatchlist('${slug}')" title="Remove">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function removeFromWatchlist(slug) {
+  watchlist.delete(slug);
+  saveWatchlistLS(watchlist);
+  renderWatchlist();
+  // Re-render results if present so star updates
+  if (displayed.length) renderTable(displayed);
+  // Sync to GitHub
+  const {pat} = loadSettings();
+  if (!pat) return;
+  const allForCommit = companies.map(c => ({
+    name: c.name, slug: c.slug, ats: c.ats,
+    ...(watchlist.has(c.slug) ? {watchlist: true} : {})
+  }));
+  commitCompaniesToGitHub(allForCommit);
 }
 
 function updateResumePulse() {
@@ -1326,37 +1472,14 @@ async function loadCompanies() {
     }
   }
 
+  // Restore any watchlist flags baked into companies.json
+  for (const c of catalog) {
+    if (c.watchlist) watchlist.add(c.slug);
+  }
+
   companies = catalog;
   selected  = new Set(companies.map(c => c.slug));
 }
-
-// ── Category rendering ────────────────────────────────────────────────────────
-function renderCats() {
-  document.getElementById('catList').innerHTML = CATS.map(cat => {
-    const cos   = companies.filter(c => c.cats.includes(cat.id));
-    const allOn = cos.length>0 && cos.every(c=>selected.has(c.slug));
-    return `<div class="check-row ${allOn?'on':''}" onclick="toggleCat('${cat.id}')">
-      <span class="check-box">${allOn?'✓':''}</span>
-      <span style="flex:1">${cat.label}</span>
-      <span style="font-family:var(--mono);font-size:0.6rem;color:${allOn?'var(--amber)':'var(--ink-4)'}">${cos.length}</span>
-    </div>`;
-  }).join('');
-}
-
-function renderCatCompanyCounts() {
-  // Update count badges without full re-render
-  renderCats();
-}
-
-function toggleCat(id) {
-  const cos   = companies.filter(c=>c.cats.includes(id));
-  const allOn = cos.every(c=>selected.has(c.slug));
-  cos.forEach(c => allOn ? selected.delete(c.slug) : selected.add(c.slug));
-  renderCats();
-}
-
-function selectAllCats() { companies.forEach(c=>selected.add(c.slug)); renderCats(); }
-function selectNoneCats() { selected.clear(); renderCats(); }
 
 function setHours(h,btn) {
   hoursFilter=h;
@@ -1636,11 +1759,22 @@ async function scoreWithAI(jobs) {
 function renderTable(jobs) {
   const area=document.getElementById('resultsArea');
   if(!jobs.length){area.innerHTML=`<div class="empty"><p><em>No jobs match this filter.</em></p></div>`;return;}
-  const rows=jobs.map((j,i)=>{
+
+  // Sort: watchlisted companies float to top within their score tier
+  const sorted = [...jobs].sort((a,b) => {
+    const aW = watchlist.has(a.companySlug) ? 1 : 0;
+    const bW = watchlist.has(b.companySlug) ? 1 : 0;
+    if (aW !== bW) return bW - aW;
+    return b.score - a.score;
+  });
+
+  const rows=sorted.map((j,i)=>{
     const tier=j.score>=80?'hi':j.score>=60?'mid':'lo';
     const wCls=j.isRemote?'remote':j.isHybrid?'hybrid':'onsite';
     const wLbl=j.isRemote?'Remote':j.isHybrid?'Hybrid':'On-site';
     const fresh=j.publishedAt&&(Date.now()-new Date(j.publishedAt))<3600000;
+    const isWatched = watchlist.has(j.companySlug);
+    const watchedBadge = isWatched ? `<span class="watchlist-badge">★ watching</span>` : '';
     return`<tr class="r-row" style="animation-delay:${Math.min(i*.022,.5)}s">
       <td class="score-cell">
         <div class="score-wrap">
@@ -1649,7 +1783,7 @@ function renderTable(jobs) {
         </div>
       </td>
       <td class="title-cell">
-        <div class="job-title">${j.title}</div>
+        <div class="job-title">${j.title}${watchedBadge}</div>
         <div class="job-reason">${j.reason}</div>
       </td>
       <td class="meta-cell">
@@ -1662,7 +1796,12 @@ function renderTable(jobs) {
         </div>
       </td>
       <td class="time-cell"><span class="time-val ${fresh?'fresh':''}">${fmtTime(j.publishedAt)}</span></td>
-      <td class="apply-cell"><a class="apply-link" href="${j.url}" target="_blank" rel="noopener">Apply →</a></td>
+      <td class="apply-cell" style="display:flex;align-items:center;justify-content:flex-end;gap:6px;padding-top:13px">
+        <button class="star-btn ${isWatched?'starred':''}" onclick="toggleWatchlist('${j.companySlug}','${j.company.replace(/'/g,"\\'")}',this)" title="${isWatched?'Remove from watchlist':'Add to watchlist'}">
+          ${isWatched?'★':'☆'}
+        </button>
+        <a class="apply-link" href="${j.url}" target="_blank" rel="noopener">Apply →</a>
+      </td>
     </tr>`;
   }).join('');
   area.innerHTML=`<table class="r-table">
