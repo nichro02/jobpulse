@@ -424,7 +424,7 @@ body {
 .r-row td:last-child { text-align: right; padding-right: 0; }
 
 /* Score cell */
-.score-cell { width: 72px; }
+.score-cell { width: 72px; display: none; }
 
 .score-wrap {
   display: flex;
@@ -1072,9 +1072,9 @@ select option { background: #fff; }
       <div class="result-tools" id="resultTools" style="display:none">
         <input class="search-input" id="searchInput" placeholder="Filter by company or title…" oninput="filterResults()" />
         <select class="sort-sel" onchange="sortResults(this.value)">
-          <option value="relevance">Relevance</option>
           <option value="newest">Newest first</option>
           <option value="company">Company A–Z</option>
+          <option value="watchlist">Watchlist first</option>
         </select>
       </div>
     </div>
@@ -1605,13 +1605,13 @@ async function runScan() {
   }
 
   setStatus(`Scoring ${raw.length} jobs with AI…`);
-  allResults=await scoreWithAI(raw);
-  displayed=[...allResults];
+  allResults = await scoreWithAI(raw);
+  displayed  = [...allResults];
   renderTable(displayed);
   document.getElementById('resultTools').style.display='flex';
   document.getElementById('searchInput').value='';
   document.getElementById('mainHeading').innerHTML=`${allResults.length} <em>recent openings</em>`;
-  setStatus(`${allResults.length} jobs ranked by match to your profile`);
+  setStatus(`${allResults.length} jobs found`);
   document.getElementById('pulseLabel').textContent='Done';
   btn.disabled=false; btn.innerHTML='Scan jobs';
 }
@@ -1760,12 +1760,12 @@ function renderTable(jobs) {
   const area=document.getElementById('resultsArea');
   if(!jobs.length){area.innerHTML=`<div class="empty"><p><em>No jobs match this filter.</em></p></div>`;return;}
 
-  // Sort: watchlisted companies float to top within their score tier
+  // Default sort: watchlisted first, then newest
   const sorted = [...jobs].sort((a,b) => {
     const aW = watchlist.has(a.companySlug) ? 1 : 0;
     const bW = watchlist.has(b.companySlug) ? 1 : 0;
     if (aW !== bW) return bW - aW;
-    return b.score - a.score;
+    return new Date(b.publishedAt||0) - new Date(a.publishedAt||0);
   });
 
   const rows=sorted.map((j,i)=>{
@@ -1805,7 +1805,7 @@ function renderTable(jobs) {
     </tr>`;
   }).join('');
   area.innerHTML=`<table class="r-table">
-    <thead><tr><th>Score</th><th>Role</th><th>Company</th><th>Posted</th><th></th></tr></thead>
+    <thead><tr><th>Role</th><th>Company</th><th>Posted</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
@@ -1818,9 +1818,14 @@ function filterResults() {
 }
 
 function sortResults(by) {
-  if(by==='relevance')displayed.sort((a,b)=>b.score-a.score);
-  else if(by==='newest')displayed.sort((a,b)=>new Date(b.publishedAt||0)-new Date(a.publishedAt||0));
+  if(by==='newest')displayed.sort((a,b)=>new Date(b.publishedAt||0)-new Date(a.publishedAt||0));
   else if(by==='company')displayed.sort((a,b)=>a.company.localeCompare(b.company));
+  else if(by==='watchlist')displayed.sort((a,b)=>{
+    const aW=watchlist.has(a.companySlug)?1:0;
+    const bW=watchlist.has(b.companySlug)?1:0;
+    if(aW!==bW)return bW-aW;
+    return new Date(b.publishedAt||0)-new Date(a.publishedAt||0);
+  });
   renderTable(displayed);
 }
 
