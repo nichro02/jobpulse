@@ -78,3 +78,4 @@ jobpulse/
         └── validate-companies.yml      # GitHub Action: validate on PR
 ```
 
+
