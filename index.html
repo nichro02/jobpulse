@@ -822,6 +822,19 @@ select option { background: #fff; }
 
 .wl-remove:hover { color: var(--red, #c0392b); }
 
+/* applied badge */
+.applied-badge {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  color: var(--ink-4);
+  background: var(--paper-2);
+  border: 1px solid var(--paper-3);
+  padding: 4px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
 /* gear btn */
 .gear-btn {
   background: none;
@@ -886,6 +899,25 @@ select option { background: #fff; }
         <button class="modal-cancel" onclick="closeSettings()" style="margin-left:8px">Cancel</button>
       </div>
       <div class="modal-status" id="settingsStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Applied modal -->
+<div class="modal-overlay" id="appliedModal" onclick="closeAppliedOnBg(event)">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Did you apply?</div>
+    <div id="appliedModalBody" style="margin:14px 0 20px">
+      <div id="appliedJobTitle" style="font-size:0.9rem;font-weight:600;color:var(--ink);line-height:1.35;margin-bottom:4px"></div>
+      <div id="appliedJobCompany" style="font-family:var(--mono);font-size:0.7rem;color:var(--ink-3)"></div>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px">
+        <button class="modal-save" onclick="confirmApplied()">Yes, I applied</button>
+        <button class="modal-cancel" onclick="closeApplied()">Not yet</button>
+      </div>
+      <button class="modal-cancel" onclick="closeApplied()" style="border:none;color:var(--ink-4);padding:9px 4px">Dismiss</button>
     </div>
   </div>
 </div>
@@ -1109,7 +1141,19 @@ const SETTINGS_KEY   = 'jobpulse_settings';
 const LOCAL_COS_KEY  = 'jobpulse_local_companies';
 const RESUME_KEY     = 'jobpulse_resume';
 const WATCHLIST_KEY  = 'jobpulse_watchlist';
+const APPLIED_KEY    = 'jobpulse_applied';
 const COMPANIES_PATH = 'public/companies.json';
+
+// ── Applied helpers ───────────────────────────────────────────────────────────
+function loadApplied() {
+  try { return JSON.parse(localStorage.getItem(APPLIED_KEY)) || []; } catch { return []; }
+}
+function saveApplied(arr) {
+  localStorage.setItem(APPLIED_KEY, JSON.stringify(arr));
+}
+function hasApplied(companySlug, jobId) {
+  return loadApplied().some(a => a.companySlug === companySlug && a.jobId === jobId);
+}
 
 // ── Watchlist helpers ─────────────────────────────────────────────────────────
 function loadWatchlistLS() {
@@ -1136,6 +1180,45 @@ function loadLocalCos()    { try { return JSON.parse(localStorage.getItem(LOCAL_
 function saveLocalCos(arr) { localStorage.setItem(LOCAL_COS_KEY, JSON.stringify(arr)); }
 
 // ── Settings modal ────────────────────────────────────────────────────────────
+// ── Applied modal ─────────────────────────────────────────────────────────────
+let _pendingApply = null; // { companySlug, jobId, title, company, url }
+
+function openApplied(companySlug, jobId, title, company, url) {
+  _pendingApply = { companySlug, jobId, title, company, url };
+  document.getElementById('appliedJobTitle').textContent  = title;
+  document.getElementById('appliedJobCompany').textContent = company;
+  document.getElementById('appliedModal').classList.add('open');
+}
+
+function closeApplied() {
+  document.getElementById('appliedModal').classList.remove('open');
+  _pendingApply = null;
+}
+
+function closeAppliedOnBg(e) {
+  if (e.target === document.getElementById('appliedModal')) closeApplied();
+}
+
+function confirmApplied() {
+  if (!_pendingApply) return;
+  const { companySlug, jobId, title, company } = _pendingApply;
+
+  // Save to localStorage
+  const applied = loadApplied();
+  if (!applied.some(a => a.companySlug === companySlug && a.jobId === jobId)) {
+    applied.push({ companySlug, jobId, title, company, date: new Date().toISOString() });
+    saveApplied(applied);
+  }
+
+  // Update the row's action cell — swap Apply button for Applied badge
+  const applyBtn = document.querySelector(`[data-job-id="${jobId}"]`);
+  if (applyBtn) {
+    applyBtn.outerHTML = `<span class="applied-badge">Applied ✓</span>`;
+  }
+
+  closeApplied();
+}
+
 // ── Resume modal ─────────────────────────────────────────────────────────────
 function openResume() {
   const saved = localStorage.getItem(RESUME_KEY) || '';
@@ -1638,6 +1721,7 @@ async function runScan() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Scanning…';
   document.getElementById('resultTools').style.display='none';
   document.getElementById('progTrack').style.display='block';
+  document.getElementById('statusStrip').style.display='flex';
   setPulseLabel('Scanning');
 
   const cutoff=new Date(Date.now()-hoursFilter*3600000);
@@ -1656,6 +1740,7 @@ async function runScan() {
 
   if(!raw.length){
     setStatus(`No jobs found in the last ${hoursFilter}h. Try expanding filters.`);
+    document.getElementById('statusStrip').style.display='none';
     document.getElementById('mainHeading').textContent='No results';
     document.getElementById('resultsArea').innerHTML=`<div class="empty"><p>No recent postings matched.<br><em>Try expanding the time window or work type.</em></p></div>`;
     btn.disabled=false; btn.innerHTML='Scan jobs';
@@ -1671,6 +1756,7 @@ async function runScan() {
   document.getElementById('searchInput').value='';
   document.getElementById('mainHeading').innerHTML=`${allResults.length} <em>recent openings</em>`;
   setStatus(`${allResults.length} jobs found`);
+  document.getElementById('statusStrip').style.display='none';
   updateResumePulse();
   btn.disabled=false; btn.innerHTML='Scan jobs';
 }
@@ -1834,6 +1920,11 @@ function renderTable(jobs) {
     const fresh=j.publishedAt&&(Date.now()-new Date(j.publishedAt))<3600000;
     const isWatched = watchlist.has(j.companySlug);
     const watchedBadge = isWatched ? `<span class="watchlist-badge">★ watching</span>` : '';
+    const isApplied = hasApplied(j.companySlug, j.id);
+    const applyCell = isApplied
+      ? `<span class="applied-badge">Applied ✓</span>`
+      : `<a class="apply-link" data-job-id="${j.id}" href="${j.url}" target="_blank" rel="noopener"
+           onclick="setTimeout(()=>openApplied('${j.companySlug}','${j.id}',${JSON.stringify(j.title)},${JSON.stringify(j.company)},'${j.url}'),400)">Apply →</a>`;
     return`<tr class="r-row" style="animation-delay:${Math.min(i*.022,.5)}s">
       <td class="score-cell">
         <div class="score-wrap">
@@ -1859,7 +1950,7 @@ function renderTable(jobs) {
         <button class="star-btn ${isWatched?'starred':''}" onclick="toggleWatchlist('${j.companySlug}','${j.company.replace(/'/g,"\\'")}',this)" title="${isWatched?'Remove from watchlist':'Add to watchlist'}">
           ${isWatched?'★':'☆'}
         </button>
-        <a class="apply-link" href="${j.url}" target="_blank" rel="noopener">Apply →</a>
+        ${applyCell}
       </td>
     </tr>`;
   }).join('');
